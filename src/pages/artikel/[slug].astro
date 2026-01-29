@@ -1,0 +1,225 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE } from '../../consts';
+
+// Directus Import
+import { directus } from '../../lib/directus';
+import { readItems } from '@directus/sdk';
+
+export async function getStaticPaths() {
+  const articles = await directus.request(readItems('articles', {
+    fields: ['slug']
+  }));
+
+  return articles.map((article: any) => ({
+    params: { slug: article.slug }
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Fetch single article
+const articles = await directus.request(readItems('articles', {
+  filter: { slug: { _eq: slug } },
+  fields: ['*', 'image.*', 'author.*', 'article_tage.tags_id.*']
+}));
+
+const article = articles[0];
+
+// Extract tags
+const tags = article?.article_tage?.map((t: any) => t.tags_id).filter(Boolean) || [];
+
+if (!article) {
+  return Astro.redirect('/404');
+}
+
+const pageTitle = `${article.title} | ${SITE_TITLE}`;
+const pageDescription = article.teaser || article.title;
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <BaseHead title={pageTitle} description={pageDescription} />
+  </head>
+  <body class="bg-[#E8E2DB] min-h-screen">
+    <Header />
+    <main class="max-w-4xl mx-auto px-4 py-8">
+      <article class="article-card">
+        <div class="satire-banner">
+          <span class="satire-icon">⚠️</span>
+          <span>SATIRE</span>
+          <span class="satire-icon">⚠️</span>
+        </div>
+
+        {article.image && (
+          <img
+            src={`https://cms.dein-mmo.de/assets/${article.image.id || article.image}`}
+            alt={article.title}
+            class="w-full h-64 md:h-96 object-cover mb-6"
+          />
+        )}
+        
+        <h1 class="font-minecraft text-3xl md:text-4xl mb-4 text-[#1A3263]">
+          {article.title}
+        </h1>
+
+        <div class="article-meta">
+          {article.published_at && (
+            <time datetime={article.published_at}>
+              {new Date(article.published_at).toLocaleDateString('de-DE', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </time>
+          )}
+          {article.author && (
+            <span>von {article.author.name || 'Redaktion'}</span>
+          )}
+        </div>
+
+        {tags.length > 0 && (
+          <div class="tags">
+            {tags.map((tag: any) => (
+              <span class="tag" style={`background-color: ${tag.color || '#547792'}`}>
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {article.teaser && (
+          <p class="text-lg text-[#547792] mb-6 font-semibold">
+            {article.teaser}
+          </p>
+        )}
+
+        <div class="prose prose-lg max-w-none text-[#1A3263]" set:html={article.content} />
+
+        <div class="mt-8 pt-6 border-t-2 border-[#547792]">
+          <a href="/" class="back-btn">
+            ← Zurück zur Übersicht
+          </a>
+        </div>
+      </article>
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .article-card {
+    background-color: #fff;
+    border: 3px solid var(--color-navy, #1A3263);
+    box-shadow: 4px 4px 0 0 var(--color-blue, #547792);
+    padding: 2rem;
+    position: relative;
+  }
+
+  .satire-banner {
+    background-color: #ff4444;
+    color: #fff;
+    font-family: var(--font-display, 'Minecraft', monospace);
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.75rem 1rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin: -2rem -2rem 1.5rem -2rem;
+    border-bottom: 3px solid var(--color-navy, #1A3263);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .satire-icon {
+    font-size: 1.25rem;
+  }
+
+  .article-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    color: var(--color-blue, #547792);
+    font-size: 0.9rem;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    padding: 4px 10px;
+    border: 2px solid rgba(0,0,0,0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .back-btn {
+    display: inline-block;
+    background-color: var(--color-cream, #E8E2DB);
+    color: var(--color-navy, #1A3263);
+    border: 2px solid var(--color-navy, #1A3263);
+    box-shadow: 2px 2px 0 0 var(--color-blue, #547792);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display, 'Minecraft', monospace);
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.1s;
+  }
+
+  .back-btn:hover {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 0 var(--color-blue, #547792);
+  }
+
+  .prose {
+    font-family: var(--font-body, system-ui, sans-serif);
+    line-height: 1.8;
+  }
+
+  .prose h2, .prose h3 {
+    font-family: var(--font-display, 'Minecraft', monospace);
+    color: var(--color-navy, #1A3263);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-gold, #FAB95B);
+  }
+
+  .prose h3 {
+    border-bottom: none;
+  }
+
+  .prose p {
+    margin-bottom: 1.25rem;
+  }
+
+  .prose ul, .prose ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .prose li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose strong {
+    color: var(--color-navy, #1A3263);
+  }
+
+  .prose em {
+    color: var(--color-blue, #547792);
+  }
+</style>

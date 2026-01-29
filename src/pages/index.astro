@@ -1,0 +1,39 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import ArticleCard from '../components/ArticleCard.astro';
+
+// Directus Import
+import { directus } from '../lib/directus';
+import { readItems } from '@directus/sdk';
+
+// Daten holen - nur veröffentlichte Artikel
+const posts = await directus.request(readItems('articles', {
+    filter: {
+      published_at: { _nnull: true }
+    },
+    sort: ['-published_at'], // Neueste zuerst
+    fields: ['*', 'image.*', 'article_tage.tags_id.*'] // Alles holen + Bilddaten + Tags
+}));
+---
+
+<!doctype html>
+<html lang="de">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body class="bg-[#E8E2DB] min-h-screen">
+		<Header />
+		<main class="max-w-4xl mx-auto px-4 py-8">
+			<section class="grid gap-6 md:grid-cols-2">
+				{posts.length === 0 && <p class="col-span-2 text-center">Keine Artikel gefunden.</p>}
+				{posts.map((post: any) => (
+					<ArticleCard post={post} />
+				))}
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>

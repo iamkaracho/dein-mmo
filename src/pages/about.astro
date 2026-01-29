@@ -1,0 +1,139 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+
+// Directus Import
+import { directus } from '../lib/directus';
+import { readSingleton } from '@directus/sdk';
+
+// Fetch about page content
+const about = await directus.request(readSingleton('about_page'));
+
+const pageTitle = `Über uns | ${SITE_TITLE}`;
+const pageDescription = about.Intro || 'Erfahre mehr über DEIN MMO';
+
+// Helper to get image URL
+function getImageUrl(image: string | { id: string } | undefined): string | null {
+  if (!image) return null;
+  const imageId = typeof image === 'string' ? image : image.id;
+  return `https://cms.dein-mmo.de/assets/${imageId}`;
+}
+
+const imageUrl = getImageUrl(about.image);
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <BaseHead title={pageTitle} description={pageDescription} />
+  </head>
+  <body class="bg-[#E8E2DB] min-h-screen">
+    <Header />
+    <main class="max-w-4xl mx-auto px-4 py-8">
+      <article class="content-card">
+        {imageUrl && (
+          <div class="hero-image">
+            <img src={imageUrl} alt={about.headline} />
+          </div>
+        )}
+        
+        <h1>{about.headline}</h1>
+        
+        {about.Intro && (
+          <p class="lead">{about.Intro}</p>
+        )}
+
+        <div class="prose" set:html={about.content} />
+      </article>
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .content-card {
+    background-color: #fff;
+    border: 3px solid var(--color-navy, #1A3263);
+    box-shadow: 4px 4px 0 0 var(--color-blue, #547792);
+    padding: 2rem;
+  }
+
+  .hero-image {
+    margin: -2rem -2rem 2rem -2rem;
+    border-bottom: 3px solid var(--color-navy, #1A3263);
+  }
+
+  .hero-image img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+  }
+
+  h1 {
+    font-family: var(--font-display, 'Minecraft', monospace);
+    font-size: 1.75rem;
+    color: var(--color-navy, #1A3263);
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+  }
+
+  .lead {
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 1.125rem;
+    color: var(--color-blue, #547792);
+    font-weight: 500;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  .prose {
+    font-family: var(--font-body, system-ui, sans-serif);
+    line-height: 1.8;
+    color: var(--color-navy, #1A3263);
+  }
+
+  .prose :global(h2), .prose :global(h3), .prose :global(strong) {
+    font-family: var(--font-display, 'Minecraft', monospace);
+    color: var(--color-navy, #1A3263);
+  }
+
+  .prose :global(h2) {
+    font-size: 1.25rem;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-gold, #FAB95B);
+  }
+
+  .prose :global(p) {
+    margin-bottom: 1.25rem;
+  }
+
+  .prose :global(ul), .prose :global(ol) {
+    margin-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .prose :global(li) {
+    margin-bottom: 0.75rem;
+  }
+
+  .prose :global(em) {
+    color: var(--color-blue, #547792);
+  }
+
+  .prose :global(hr) {
+    border: none;
+    border-top: 3px solid var(--color-gold, #FAB95B);
+    margin: 2rem 0;
+  }
+
+  @media (max-width: 640px) {
+    h1 {
+      font-size: 1.4rem;
+    }
+  }
+</style>

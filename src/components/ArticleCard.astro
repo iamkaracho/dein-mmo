@@ -1,0 +1,222 @@
+---
+interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  color?: string;
+}
+
+interface Props {
+  post: {
+    id: number;
+    title: string;
+    slug: string;
+    teaser?: string;
+    published_at?: string;
+    image?: string | { id: string };
+    article_tage?: Array<{ tags_id: Tag }>;
+  };
+}
+
+const { post } = Astro.props;
+
+// Helper to get image URL
+function getImageUrl(image: string | { id: string } | undefined): string | null {
+  if (!image) return null;
+  const imageId = typeof image === 'string' ? image : image.id;
+  return `https://cms.dein-mmo.de/assets/${imageId}`;
+}
+
+const imageUrl = getImageUrl(post.image);
+
+// Extract tags from junction table
+const tags = post.article_tage?.map(t => t.tags_id).filter(Boolean) || [];
+---
+
+<article class="article-card">
+  {imageUrl && (
+    <div class="image-wrapper">
+      <img
+        src={imageUrl}
+        alt={post.title}
+        loading="lazy"
+      />
+      <span class="satire-badge">SATIRE</span>
+    </div>
+  )}
+  {!imageUrl && (
+    <div class="satire-badge-top">
+      <span class="satire-badge">SATIRE</span>
+    </div>
+  )}
+  <div class="card-content">
+    {tags.length > 0 && (
+      <div class="tags">
+        {tags.map(tag => (
+          <span class="tag" style={`background-color: ${tag.color || '#547792'}`}>
+            {tag.name}
+          </span>
+        ))}
+      </div>
+    )}
+    {post.published_at && (
+      <time class="date">
+        {new Date(post.published_at).toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        })}
+      </time>
+    )}
+    <h2 class="title">{post.title}</h2>
+    {post.teaser && <p class="teaser">{post.teaser}</p>}
+    <a href={`/artikel/${post.slug}`} class="read-btn">
+      Weiterlesen →
+    </a>
+  </div>
+</article>
+
+<style>
+  .article-card {
+    background-color: #fff;
+    border: 3px solid #1A3263;
+    box-shadow: 4px 4px 0 0 #547792;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .article-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #547792;
+  }
+
+  .image-wrapper {
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    border-bottom: 3px solid #1A3263;
+  }
+
+  .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+
+  .article-card:hover .image-wrapper img {
+    transform: scale(1.05);
+  }
+
+  .card-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .date {
+    font-size: 0.75rem;
+    color: #547792;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .title {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #1A3263;
+    margin-bottom: 0.75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .teaser {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #547792;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+  }
+
+  .read-btn {
+    display: inline-block;
+    align-self: flex-start;
+    background-color: #FAB95B;
+    color: #1A3263;
+    border: 2px solid #1A3263;
+    box-shadow: 2px 2px 0 0 #1A3263;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.1s;
+  }
+
+  .read-btn:hover {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 0 #1A3263;
+  }
+
+  .read-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  .satire-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #ff4444;
+    color: #fff;
+    font-family: var(--font-display, 'Minecraft', monospace);
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 4px 8px;
+    border: 2px solid #1A3263;
+    box-shadow: 2px 2px 0 0 #1A3263;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 10;
+  }
+
+  .satire-badge-top {
+    position: relative;
+    padding: 0.5rem;
+    text-align: right;
+  }
+
+  .satire-badge-top .satire-badge {
+    position: relative;
+    top: auto;
+    right: auto;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #fff;
+    padding: 2px 6px;
+    border: 1px solid rgba(0,0,0,0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+</style>
